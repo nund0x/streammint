@@ -136,13 +136,15 @@ describe("nft-candy-machine", function () {
   );
 
   const connection = new anchor.web3.Connection(
-    "https://api.devnet.solana.com/",
+    //"https://api.devnet.solana.com/",
+    "http://localhost:8899",
     "recent"
   );
 
   // Address of the deployed program.
   const programId = new anchor.web3.PublicKey(
-    "cndyAnrLdpjq1Ssp1z8xxDsB8dxe7u4HL5Nxi2K5WXZ"
+    // "cndyAnrLdpjq1Ssp1z8xxDsB8dxe7u4HL5Nxi2K5WXZ"
+    "GvzAtg1rbKYpmsYPJejo7pZ6cmc3MWCRJxi5KxbJA9Ln"
   );
 
   const walletWrapper = new anchor.Wallet(myWallet);
@@ -601,6 +603,7 @@ describe("nft-candy-machine", function () {
               fromPubkey: myWallet.publicKey,
               toPubkey: this.authority.publicKey,
               lamports: 1000000000 + 10000000, // add minting fees in there
+              // lamports: 1000000000 * 2, // add minting fees in there
             }),
             anchor.web3.SystemProgram.createAccount({
               fromPubkey: myWallet.publicKey,
