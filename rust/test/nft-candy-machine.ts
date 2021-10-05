@@ -396,6 +396,11 @@ describe("nft-candy-machine", function () {
           this.config.publicKey,
           this.candyMachineUuid
         );
+        console.log(`MINT #${i}: `, );
+        const machine: CandyMachine = await program.account.candyMachine.fetch(
+          candyMachine
+        );
+        console.log(`machine: ${machine.config}`);
         try {
           const tx = await program.rpc.mintNft({
             accounts: {
