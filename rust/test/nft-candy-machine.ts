@@ -137,7 +137,8 @@ describe("nft-candy-machine", function () {
 
   const connection = new anchor.web3.Connection(
     //"https://api.devnet.solana.com/",
-    "http://localhost:8899",
+    "https://api.testnet.solana.com/",
+    // "http://localhost:8899",
     "recent"
   );
 
