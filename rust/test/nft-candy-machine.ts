@@ -122,6 +122,10 @@ const configArrayStart =
   1 + // retain authority
   4; // max number of lines;
 const configLineSize = 4 + 32 + 4 + 200;
+type ConfigLine = {
+  name: String,
+  uri: String,
+}
 
 const CANDY_MACHINE = "candy_machine";
 describe("nft-candy-machine", function () {
@@ -296,6 +300,33 @@ describe("nft-candy-machine", function () {
     });
   };
 
+  const readConfigLines = async function (
+    address: PublicKey
+  ): Promise<ConfigLine[]> {
+    const config = await connection.getAccountInfo(address);
+
+    const amountOfConfigs = new anchor.BN(
+      config.data.slice(configArrayStart, configArrayStart + 4),
+      "le"
+    );
+    console.log(`Found ${amountOfConfigs.toNumber()} lines in config`);
+
+    var lines = [];
+    for (let i = 0; i < amountOfConfigs.toNumber(); i++) {
+      const thisSlice = config.data.slice(
+        configArrayStart + 4 + configLineSize * i,
+        configArrayStart + 4 + configLineSize * (i + 1)
+      );
+      const name = fromUTF8Array([...thisSlice.slice(4, 36)]);
+      const uri = fromUTF8Array([...thisSlice.slice(40, 240)]);
+      lines.push({
+        name: name.replace(/\0/g, "").trim(),
+        uri: uri.replace(/\0/g, "").trim(),
+      });
+    }
+
+    return lines;
+  }
 
   const getTokenWallet = async function (wallet: PublicKey, mint: PublicKey) {
     return (
@@ -314,7 +345,8 @@ describe("nft-candy-machine", function () {
     beforeEach(async function () {
       const config = await anchor.web3.Keypair.generate();
       this.config = config;
-      const txInstr = await createConfig(this, false, 10);
+      const maxNumLines = 15;
+      const txInstr = await createConfig(this, false, maxNumLines);
 
       // Grab authority
       const authority = this.authority;
@@ -353,10 +385,10 @@ describe("nft-candy-machine", function () {
               anchor.web3.SystemProgram.createAccount({
                 fromPubkey: myWallet.publicKey,
                 newAccountPubkey: config.publicKey,
-                space: configArrayStart + 4 + 10 * configLineSize + 4 + 2,
+                space: configArrayStart + 4 + maxNumLines * configLineSize + 4 + 2,
                 lamports:
                   await provider.connection.getMinimumBalanceForRentExemption(
-                    configArrayStart + 4 + 10 * configLineSize + 4 + 2
+                    configArrayStart + 4 + maxNumLines * configLineSize + 4 + 2
                   ),
                 programId: programId,
               }),
@@ -608,18 +640,18 @@ describe("nft-candy-machine", function () {
 
       let config, authority;
       ({config, authority} = passToTests);
-      console.log(program.account);
-      const oldConfigData = await program.account.Config.fetch(config.publicKey);
+      // console.log(program.account.config);
+      const oldConfigData = await readConfigLines(config.publicKey);
       console.log("old config data", oldConfigData);
 
       // Add 5 lines to end of config
       try {
-        const linesInstr = await addConfigLinesExecute({authority: authority, config: config}, 0, 5);
+        const linesInstr = await addConfigLinesExecute({authority: authority, config: config}, 10, 5);
       } catch (e) {
         console.error(`Error adding config lines: ${e}`);
         throw(e);
       }
-      const newConfigData = await program.account.Config.fetch(config.publicKey);
+      const newConfigData = await readConfigLines(config.publicKey);
       console.log("new config data: ", newConfigData);
     });
 
