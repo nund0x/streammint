@@ -132,20 +132,22 @@ describe("nft-candy-machine", function () {
   const myWallet = anchor.web3.Keypair.fromSecretKey(
     new Uint8Array(
       JSON.parse(require("fs").readFileSync(process.env.MY_WALLET, "utf8"))
+      // JSON.parse(require("fs").readFileSync("~/.config/solana/id.json", "utf8"))
     )
   );
 
   const connection = new anchor.web3.Connection(
-    //"https://api.devnet.solana.com/",
-    "https://api.testnet.solana.com/",
+    "https://api.devnet.solana.com/",
+    // "https://api.testnet.solana.com/",
     // "http://localhost:8899",
     "recent"
   );
 
   // Address of the deployed program.
   const programId = new anchor.web3.PublicKey(
-    // "cndyAnrLdpjq1Ssp1z8xxDsB8dxe7u4HL5Nxi2K5WXZ"
-    "GvzAtg1rbKYpmsYPJejo7pZ6cmc3MWCRJxi5KxbJA9Ln"
+    "cndyAnrLdpjq1Ssp1z8xxDsB8dxe7u4HL5Nxi2K5WXZ"
+    // "5dm39hF22LYPjQ412JkJNk5NgMkTSgEFFYrSQZmL12Y2"
+    // "GvzAtg1rbKYpmsYPJejo7pZ6cmc3MWCRJxi5KxbJA9Ln"
   );
 
   const walletWrapper = new anchor.Wallet(myWallet);
@@ -231,7 +233,8 @@ describe("nft-candy-machine", function () {
 
   const addConfigLines = async function (
     that,
-    size: number
+    size: number,
+    debug: boolean = false,
   ): Promise<TransactionInstruction[]> {
     const sample = {
       uri: "www.aol.com",
@@ -267,6 +270,33 @@ describe("nft-candy-machine", function () {
     } else return [tx1];
   };
 
+  const addConfigLinesExecute = async function (
+    that,
+    index: number,
+    size: number,
+  ): Promise<void> {
+    const sample = {
+      uri: "www.crunchyroll.com",
+      isMutable: true,
+    };
+    const firstVec = [];
+    for (let i = 0; i < size; i++) {
+      firstVec.push({ ...sample, name: `Sample ${i}` });
+    }
+
+    await program.rpc.addConfigLines(
+      index, 
+      firstVec, 
+      {
+      accounts: {
+        config: that.config.publicKey,
+        authority: that.authority.publicKey,
+      },
+      signers: [that.authority, myWallet],
+    });
+  };
+
+
   const getTokenWallet = async function (wallet: PublicKey, mint: PublicKey) {
     return (
       await PublicKey.findProgramAddress(
@@ -277,10 +307,19 @@ describe("nft-candy-machine", function () {
   };
 
   describe("sol only", function () {
+    // var config: anchor.web3.Keypair;
+    // var authority: anchor.web3.Keypair | null;
+    var passToTests;
+
     beforeEach(async function () {
       const config = await anchor.web3.Keypair.generate();
       this.config = config;
       const txInstr = await createConfig(this, false, 10);
+
+      // Grab authority
+      const authority = this.authority;
+      passToTests = {authority: authority, config: config};
+
       const linesInstr = await addConfigLines(this, 10);
       this.candyMachineUuid = anchor.web3.Keypair.generate()
         .publicKey.toBase58()
@@ -337,7 +376,7 @@ describe("nft-candy-machine", function () {
       }
     });
 
-    it("has all ten lines", async function () {
+    it.skip("has all ten lines", async function () {
       const config = await connection.getAccountInfo(this.config.publicKey);
 
       const amountOfConfigs = new anchor.BN(
@@ -357,7 +396,7 @@ describe("nft-candy-machine", function () {
       }
     });
 
-    it("Is initialized!", async function () {
+    it.skip("Is initialized!", async function () {
       // Add your test here.
       const [candyMachine, bump] = await getCandyMachine(
         this.config.publicKey,
@@ -383,7 +422,7 @@ describe("nft-candy-machine", function () {
       assert.equal(machine.tokenMint, null);
     });
 
-    it("mints 10x and then ends due to being out of candy", async function () {
+    it.skip("mints 10x and then ends due to being out of candy", async function () {
       for (let i = 0; i < 11; i++) {
         const mint = anchor.web3.Keypair.generate();
         const token = await getTokenWallet(
@@ -396,7 +435,7 @@ describe("nft-candy-machine", function () {
           this.config.publicKey,
           this.candyMachineUuid
         );
-        console.log(`MINT #${i}: `, );
+        console.log(`MINT #${i}`);
         const machine: CandyMachine = await program.account.candyMachine.fetch(
           candyMachine
         );
@@ -479,7 +518,112 @@ describe("nft-candy-machine", function () {
       }
     });
 
-    it("mints with goLive date not as the authority over the candy machine", async function () {
+    it("mints 10x, adds 10 more, then mints 10x", async function () {
+      // for (let i = 0; i < 10; i++) {
+      //   const mint = anchor.web3.Keypair.generate();
+      //   const token = await getTokenWallet(
+      //     this.authority.publicKey,
+      //     mint.publicKey
+      //   );
+      //   const metadata = await getMetadata(mint.publicKey);
+      //   const masterEdition = await getMasterEdition(mint.publicKey);
+      //   const [candyMachine, _] = await getCandyMachine(
+      //     this.config.publicKey,
+      //     this.candyMachineUuid
+      //   );
+      //   try {
+      //     const tx = await program.rpc.mintNft({
+      //       accounts: {
+      //         config: this.config.publicKey,
+      //         candyMachine: candyMachine,
+      //         payer: this.authority.publicKey,
+      //         wallet: myWallet.publicKey,
+      //         mint: mint.publicKey,
+      //         metadata,
+      //         masterEdition,
+      //         mintAuthority: this.authority.publicKey,
+      //         updateAuthority: this.authority.publicKey,
+      //         tokenMetadataProgram: TOKEN_METADATA_PROGRAM_ID,
+      //         tokenProgram: TOKEN_PROGRAM_ID,
+      //         systemProgram: SystemProgram.programId,
+      //         rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      //         clock: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+      //       },
+      //       signers: [mint, this.authority, myWallet],
+      //       instructions: [
+      //         // Give authority enough to pay off the cost of the nft!
+      //         // it'll be funnneled right back
+      //         anchor.web3.SystemProgram.transfer({
+      //           fromPubkey: myWallet.publicKey,
+      //           toPubkey: this.authority.publicKey,
+      //           lamports: 1000000000 + 10000000, // add minting fees in there
+      //         }),
+      //         anchor.web3.SystemProgram.createAccount({
+      //           fromPubkey: myWallet.publicKey,
+      //           newAccountPubkey: mint.publicKey,
+      //           space: MintLayout.span,
+      //           lamports:
+      //             await provider.connection.getMinimumBalanceForRentExemption(
+      //               MintLayout.span
+      //             ),
+      //           programId: TOKEN_PROGRAM_ID,
+      //         }),
+      //         Token.createInitMintInstruction(
+      //           TOKEN_PROGRAM_ID,
+      //           mint.publicKey,
+      //           0,
+      //           this.authority.publicKey,
+      //           this.authority.publicKey
+      //         ),
+      //         createAssociatedTokenAccountInstruction(
+      //           token,
+      //           myWallet.publicKey,
+      //           this.authority.publicKey,
+      //           mint.publicKey
+      //         ),
+      //         Token.createMintToInstruction(
+      //           TOKEN_PROGRAM_ID,
+      //           mint.publicKey,
+      //           token,
+      //           this.authority.publicKey,
+      //           [],
+      //           1
+      //         ),
+      //       ],
+      //     });
+      //     console.log(`MINT #${i}: succeeded`);
+      //   } catch (e) {
+      //     console.error(`\n\nMINT #${i}: failed\n`);
+      //     console.error("Failure at ", i, e);
+      //   }
+      //   if (i != 10) {
+      //     const metadataAccount = await connection.getAccountInfo(metadata);
+      //     assert.ok(metadataAccount.data.length > 0);
+      //     const masterEditionAccount = await connection.getAccountInfo(
+      //       masterEdition
+      //     );
+      //     assert.ok(masterEditionAccount.data.length > 0);
+      //   }
+      // }
+
+      let config, authority;
+      ({config, authority} = passToTests);
+      console.log(program.account);
+      const oldConfigData = await program.account.Config.fetch(config.publicKey);
+      console.log("old config data", oldConfigData);
+
+      // Add 5 lines to end of config
+      try {
+        const linesInstr = await addConfigLinesExecute({authority: authority, config: config}, 0, 5);
+      } catch (e) {
+        console.error(`Error adding config lines: ${e}`);
+        throw(e);
+      }
+      const newConfigData = await program.account.Config.fetch(config.publicKey);
+      console.log("new config data: ", newConfigData);
+    });
+
+    it.skip("mints with goLive date not as the authority over the candy machine", async function () {
       // myWallet isnt authority, this.authority is, so shouldnt be able to mint until goLive set.
       const mint = anchor.web3.Keypair.generate();
       const token = await getTokenWallet(myWallet.publicKey, mint.publicKey);
@@ -567,7 +711,7 @@ describe("nft-candy-machine", function () {
       assert.ok(masterEditionAccount.data.length > 0);
     });
 
-    it("mints without goLive date", async function () {
+    it.skip("mints without goLive date", async function () {
       const authorityLamports = await connection.getBalance(
         this.authority.publicKey
       );
@@ -609,7 +753,6 @@ describe("nft-candy-machine", function () {
               fromPubkey: myWallet.publicKey,
               toPubkey: this.authority.publicKey,
               lamports: 1000000000 + 10000000, // add minting fees in there
-              // lamports: 1000000000 * 2, // add minting fees in there
             }),
             anchor.web3.SystemProgram.createAccount({
               fromPubkey: myWallet.publicKey,
@@ -668,7 +811,7 @@ describe("nft-candy-machine", function () {
     });
   });
 
-  describe("token", function () {
+  describe.skip("token", function () {
     beforeEach(async function () {
       const config = await anchor.web3.Keypair.generate();
       this.config = config;
