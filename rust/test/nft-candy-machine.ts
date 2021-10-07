@@ -149,9 +149,10 @@ describe("nft-candy-machine", function () {
 
   // Address of the deployed program.
   const programId = new anchor.web3.PublicKey(
-    "cndyAnrLdpjq1Ssp1z8xxDsB8dxe7u4HL5Nxi2K5WXZ"
+    // "cndyAnrLdpjq1Ssp1z8xxDsB8dxe7u4HL5Nxi2K5WXZ"
     // "5dm39hF22LYPjQ412JkJNk5NgMkTSgEFFYrSQZmL12Y2"
     // "GvzAtg1rbKYpmsYPJejo7pZ6cmc3MWCRJxi5KxbJA9Ln"
+    "6Ay7fCUXckBDqDAyt8ibEkPjYMUvsGaj1x27GBwid6Fk"
   );
 
   const walletWrapper = new anchor.Wallet(myWallet);
@@ -276,8 +277,10 @@ describe("nft-candy-machine", function () {
 
   const addConfigLinesExecute = async function (
     that,
+    candyMachine,
     index: number,
     size: number,
+    itemsAvailable:number
   ): Promise<void> {
     const sample = {
       uri: "www.crunchyroll.com",
@@ -292,12 +295,23 @@ describe("nft-candy-machine", function () {
       index, 
       firstVec, 
       {
-      accounts: {
-        config: that.config.publicKey,
-        authority: that.authority.publicKey,
-      },
-      signers: [that.authority, myWallet],
-    });
+        accounts: {
+          config: that.config.publicKey,
+          authority: that.authority.publicKey,
+        },
+        signers: [that.authority, myWallet],
+        instructions: [
+          program.instruction.updateCandyMachine(null,null,new anchor.BN(itemsAvailable),
+            {
+              accounts: {
+                candyMachine,
+                authority: this.authority.publicKey,
+              },
+            }
+          ),
+        ]
+      }
+    );
   };
 
   const readConfigLines = async function (
@@ -408,7 +422,7 @@ describe("nft-candy-machine", function () {
       }
     });
 
-    it.skip("has all ten lines", async function () {
+    it("has all ten lines", async function () {
       const config = await connection.getAccountInfo(this.config.publicKey);
 
       const amountOfConfigs = new anchor.BN(
@@ -428,7 +442,7 @@ describe("nft-candy-machine", function () {
       }
     });
 
-    it.skip("Is initialized!", async function () {
+    it("Is initialized!", async function () {
       // Add your test here.
       const [candyMachine, bump] = await getCandyMachine(
         this.config.publicKey,
@@ -454,7 +468,7 @@ describe("nft-candy-machine", function () {
       assert.equal(machine.tokenMint, null);
     });
 
-    it.skip("mints 10x and then ends due to being out of candy", async function () {
+    it("mints 10x and then ends due to being out of candy", async function () {
       for (let i = 0; i < 11; i++) {
         const mint = anchor.web3.Keypair.generate();
         const token = await getTokenWallet(
@@ -550,7 +564,7 @@ describe("nft-candy-machine", function () {
       }
     });
 
-    it("mints 10x, adds 10 more, then mints 10x", async function () {
+    it.skip("mints 10x, adds 5 more, then mints 5x", async function () {
       // Retrieve address for on-chain candy machine data 
       const [candyMachine, _] = await getCandyMachine(
         this.config.publicKey,
@@ -648,7 +662,12 @@ describe("nft-candy-machine", function () {
       console.log("old config data", oldConfigData);
 
       try {
-        const linesInstr = await addConfigLinesExecute({authority: authority, config: config}, 10, 5);
+        const linesInstr = await addConfigLinesExecute({authority: authority, config: config},
+          candyMachine, 
+          10, 
+          5, 
+          15
+        );
       } catch (e) {
         console.error(`Error adding config lines: ${e}`);
         throw(e);
@@ -779,7 +798,7 @@ describe("nft-candy-machine", function () {
           },
           signers: [mint, this.authority, myWallet],
           instructions: [
-            program.instruction.updateCandyMachine(null, new anchor.BN(500), {
+            program.instruction.updateCandyMachine(null, new anchor.BN(500), null, {
               accounts: {
                 candyMachine,
                 authority: this.authority.publicKey,

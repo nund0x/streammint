@@ -33,33 +33,33 @@ pub mod nft_candy_machine {
         let clock = &ctx.accounts.clock;
 
         match candy_machine.data.go_live_date {
-            None => {
+            none => {
                 if *ctx.accounts.payer.key != candy_machine.authority {
-                    return Err(ErrorCode::CandyMachineNotLiveYet.into());
+                    return err(errorcode::candymachinenotliveyet.into());
                 }
             }
-            Some(val) => {
+            some(val) => {
                 if clock.unix_timestamp < val {
                     if *ctx.accounts.payer.key != candy_machine.authority {
-                        return Err(ErrorCode::CandyMachineNotLiveYet.into());
+                        return err(errorcode::candymachinenotliveyet.into());
                     }
                 }
             }
         }
 
         if candy_machine.items_redeemed >= candy_machine.data.items_available {
-            return Err(ErrorCode::CandyMachineEmpty.into());
+            return err(errorcode::candymachineempty.into());
         }
 
-        if let Some(mint) = candy_machine.token_mint {
+        if let some(mint) = candy_machine.token_mint {
             let token_account_info = &ctx.remaining_accounts[0];
             let transfer_authority_info = &ctx.remaining_accounts[1];
-            let token_account: Account = assert_initialized(&token_account_info)?;
+            let token_account: account = assert_initialized(&token_account_info)?;
 
             assert_owned_by(&token_account_info, &spl_token::id())?;
 
             if token_account.mint != mint {
-                return Err(ErrorCode::MintMismatch.into());
+                return err(errorcode::mintmismatch.into());
             }
 
             if token_account.amount < candy_machine.data.price {
@@ -180,16 +180,16 @@ pub mod nft_candy_machine {
                 *ctx.accounts.mint_authority.key,
                 *ctx.accounts.metadata.key,
                 *ctx.accounts.payer.key,
-                Some(config.data.max_supply),
+                some(config.data.max_supply),
             ),
             master_edition_infos.as_slice(),
             &[&authority_seeds],
         )?;
 
-        let mut new_update_authority = Some(candy_machine.authority);
+        let mut new_update_authority = some(candy_machine.authority);
 
         if !ctx.accounts.config.data.retain_authority {
-            new_update_authority = Some(ctx.accounts.update_authority.key());
+            new_update_authority = some(ctx.accounts.update_authority.key());
         }
 
         invoke_signed(
@@ -198,8 +198,8 @@ pub mod nft_candy_machine {
                 *ctx.accounts.metadata.key,
                 candy_machine.key(),
                 new_update_authority,
-                None,
-                Some(true),
+                none,
+                some(true),
             ),
             &[
                 ctx.accounts.token_metadata_program.clone(),
@@ -209,13 +209,14 @@ pub mod nft_candy_machine {
             &[&authority_seeds],
         )?;
 
-        Ok(())
+        ok(())
     }
 
     pub fn update_candy_machine(
-        ctx: Context<UpdateCandyMachine>,
-        price: Option<u64>,
-        go_live_date: Option<i64>,
+        ctx: context<updatecandymachine>,
+        price: option<u64>,
+        go_live_date: option<i64>,
+        items_available: option<u64>,
     ) -> ProgramResult {
         let candy_machine = &mut ctx.accounts.candy_machine;
 
@@ -224,8 +225,13 @@ pub mod nft_candy_machine {
         }
 
         if let Some(go_l) = go_live_date {
-            msg!("Go live date changed to {}", go_l);
-            candy_machine.data.go_live_date = Some(go_l)
+            msg!("go live date changed to {}", go_l);
+            candy_machine.data.go_live_date = some(go_l)
+        }
+
+        if let Some(items) = items_available {
+            msg!("Items available changed to {}", items);
+            candy_machine.data.items_available = items;
         }
         Ok(())
     }
