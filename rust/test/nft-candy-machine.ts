@@ -483,8 +483,7 @@ describe("nft-candy-machine", function () {
           this.candyMachineUuid
         );
         console.log(`MINT #${i}`);
-        const metadataData = connection.getAccountInfo(metadata);
-        console.log("\tmetadata:", metadataData);
+        const metadataData = await connection.getAccountInfo(metadata);
         const machine: CandyMachine = await program.account.candyMachine.fetch(
           candyMachine
         );
@@ -770,7 +769,7 @@ describe("nft-candy-machine", function () {
 
     });
 
-    it.skip("mints with goLive date not as the authority over the candy machine", async function () {
+    it("mints with goLive date not as the authority over the candy machine", async function () {
       // myWallet isnt authority, this.authority is, so shouldnt be able to mint until goLive set.
       const mint = anchor.web3.Keypair.generate();
       const token = await getTokenWallet(myWallet.publicKey, mint.publicKey);
@@ -801,7 +800,7 @@ describe("nft-candy-machine", function () {
           },
           signers: [mint, this.authority, myWallet],
           instructions: [
-            program.instruction.updateCandyMachine(null, new anchor.BN(500), null, {
+            program.instruction.updateCandyMachine(null, new anchor.BN(500), {
               accounts: {
                 candyMachine,
                 authority: this.authority.publicKey,
@@ -858,7 +857,7 @@ describe("nft-candy-machine", function () {
       assert.ok(masterEditionAccount.data.length > 0);
     });
 
-    it.skip("mints without goLive date", async function () {
+    it("mints without goLive date", async function () {
       const authorityLamports = await connection.getBalance(
         this.authority.publicKey
       );
