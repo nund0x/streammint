@@ -17,7 +17,8 @@ const SPL_ASSOCIATED_TOKEN_ACCOUNT_PROGRAM_ID = new PublicKey(
   "ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL"
 );
 const TOKEN_METADATA_PROGRAM_ID = new PublicKey(
-  "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+  // "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+  "HNq6V1U2k7S6ZQfn5JxozMMEwJGtpTnjHGUZUHemyPhA"
 );
 function fromUTF8Array(data: number[]) {
   // array of bytes
@@ -482,6 +483,8 @@ describe("nft-candy-machine", function () {
           this.candyMachineUuid
         );
         console.log(`MINT #${i}`);
+        const metadataData = connection.getAccountInfo(metadata);
+        console.log("\tmetadata:", metadataData);
         const machine: CandyMachine = await program.account.candyMachine.fetch(
           candyMachine
         );
