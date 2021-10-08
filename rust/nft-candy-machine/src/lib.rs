@@ -216,6 +216,7 @@ pub mod nft_candy_machine {
         ctx: Context<UpdateCandyMachine>,
         price: Option<u64>,
         go_live_date: Option<i64>,
+        items_available: Option<u64>,
     ) -> ProgramResult {
         let candy_machine = &mut ctx.accounts.candy_machine;
 
@@ -225,7 +226,12 @@ pub mod nft_candy_machine {
 
         if let Some(go_l) = go_live_date {
             msg!("Go live date changed to {}", go_l);
-            candy_machine.data.go_live_date = Some(go_l)
+            candy_machine.data.go_live_date = Some(go_l);
+        }
+
+        if let Some(items) = items_available {
+            msg!("Items available set to {}", items);
+            candy_machine.data.items_available = items;
         }
         Ok(())
     }

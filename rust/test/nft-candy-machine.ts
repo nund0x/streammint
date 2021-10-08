@@ -306,7 +306,7 @@ describe("nft-candy-machine", function () {
             {
               accounts: {
                 candyMachine,
-                authority: this.authority.publicKey,
+                authority: that.authority.publicKey,
               },
             }
           ),
@@ -566,7 +566,7 @@ describe("nft-candy-machine", function () {
       }
     });
 
-    it.skip("mints 10x, adds 5 more, then mints 5x", async function () {
+    it("mints 10x, adds 5 more, then mints 5x", async function () {
       // Retrieve address for on-chain candy machine data 
       const [candyMachine, _] = await getCandyMachine(
         this.config.publicKey,
@@ -800,7 +800,7 @@ describe("nft-candy-machine", function () {
           },
           signers: [mint, this.authority, myWallet],
           instructions: [
-            program.instruction.updateCandyMachine(null, new anchor.BN(500), {
+            program.instruction.updateCandyMachine(null, new anchor.BN(500), null, {
               accounts: {
                 candyMachine,
                 authority: this.authority.publicKey,
